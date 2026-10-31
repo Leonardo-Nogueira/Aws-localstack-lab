@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Management Console (LocalStack Lab - CLF-C02)</title>
+    <style>
+        :root {
+            --aws-squid-ink: #232f3e;
+            --aws-dark: #0f1b2a;
+            --aws-orange: #ff9900;
+            --aws-bg: #f2f3f3;
+            --aws-card: #ffffff;
+            --aws-border: #d5dbdb;
+            --aws-green: #1d8102;
+            --aws-blue: #0972d3;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--aws-bg); color: #16191f; }
+        header {
+            background-color: var(--aws-squid-ink);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid var(--aws-orange);
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; }
+        .aws-badge { background: var(--aws-orange); color: #16191f; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 13px; }
+        .region-pill { background: #37475a; padding: 6px 12px; border-radius: 4px; font-size: 13px; color: #ff9900; font-weight: 600; }
+        .container { max-width: 1280px; margin: 24px auto; padding: 0 20px; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .btn {
+            background-color: var(--aws-orange);
+            color: #16191f;
+            border: 1px solid #e88b00;
+            padding: 8px 16px;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn-secondary { background-color: white; border: 1px solid #879596; color: #16191f; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+        .card {
+            background: var(--aws-card);
+            border: 1px solid var(--aws-border);
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+        .card-header {
+            background: #fafafa;
+            border-bottom: 1px solid var(--aws-border);
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .service-tag { font-size: 11px; padding: 2px 7px; border-radius: 3px; background: #e8f2fc; color: var(--aws-blue); font-weight: 700; }
+        .card-body { padding: 16px 18px; font-size: 13.5px; line-height: 1.5; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eaeded; }
+        th { color: #545b64; font-size: 12px; text-transform: uppercase; background: #f8f9fa; }
+        .status-ok { color: var(--aws-green); font-weight: 700; }
+        .mono { font-family: Consolas, monospace; font-size: 12px; background: #f4f6f8; padding: 2px 6px; border-radius: 3px; word-break: break-all; }
+        .exam-tip {
+            margin-top: 12px;
+            background: #fff8e6;
+            border-left: 4px solid var(--aws-orange);
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #4a3800;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <span class="aws-badge">AWS</span>
+        <span>LocalStack Management Console — Laboratório CLF-C02 & System Design</span>
+    </div>
+    <div style="display:flex; gap:12px; align-items:center;">
+        <span class="region-pill" id="region-display">us-east-1 (N. Virginia)</span>
+        <button class="btn" onclick="loadStatus()">🔄 Atualizar Recursos</button>
+    </div>
+</header>
+
+<div class="container">
+    <div class="toolbar">
+        <div>
+            <h2 style="font-size: 20px;">Visão Geral dos Recursos Provisionados no LocalStack (`localhost:4566`)</h2>
+            <p style="color:#545b64; font-size:13px;">Painel 100% local, sem necessidade de conta ou login externo.</p>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <a class="btn btn-secondary" href="http://localhost:8001" target="_blank">📊 Abrir DynamoDB Admin (:8001)</a>
+            <a class="btn btn-secondary" href="http://localhost:8002" target="_blank">🪣 Abrir S3 Manager (:8002)</a>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- 1. Amazon SQS -->
+        <div class="card">
+            <div class="card-header">
+                <span>📬 Amazon SQS (Simple Queue Service)</span>
+                <span class="service-tag">PULL / FILAS</span>
+            </div>
+            <div class="card-body">
+                <div id="sqs-content">Carregando filas...</div>
+                <div class="exam-tip">
+                    <strong>Dica CLF-C02:</strong> SQS desacopla microsserviços via modelo <em>Pull</em> (mensagens retidas por até 14 dias). A <code>payment-dlq</code> recebe mensagens que falharam 3x.
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Amazon SNS -->
+        <div class="card">
+            <div class="card-header">
+                <span>📢 Amazon SNS (Simple Notification Service)</span>
+                <span class="service-tag">PUSH / PUB-SUB</span>
+            </div>
+            <div class="card-body">
+                <div id="sns-content">Carregando tópicos e assinaturas...</div>
+                <div class="exam-tip">
+                    <strong>Dica CLF-C02 (Fan-Out):</strong> O tópico <code>order-events-topic</code> multiplica cada evento para as filas <code>payment-queue</code> e <code>invoice-queue</code> simultaneamente!
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Amazon S3 -->
+        <div class="card">
+            <div class="card-header">
+                <span>🪣 Amazon S3 (Simple Storage Service)</span>
+                <span class="service-tag">OBJECT STORAGE</span>
+            </div>
+            <div class="card-body">
+                <div id="s3-content">Carregando buckets...</div>
+                <div class="exam-tip">
+                    <strong>Dica CLF-C02:</strong> Armazenamento de objetos com 11 noves (99,999999999%) de durabilidade. <em>Versioning</em> protege contra exclusão acidental.
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Amazon DynamoDB -->
+        <div class="card">
+            <div class="card-header">
+                <span>⚡ Amazon DynamoDB (NoSQL Serverless)</span>
+                <span class="service-tag">KEY-VALUE / DOCS</span>
+            </div>
+            <div class="card-body">
+                <div id="dynamo-content">Carregando tabelas...</div>
+                <div class="exam-tip">
+                    <strong>Dica CLF-C02:</strong> Banco NoSQL totalmente gerenciado (Serverless) com latência de milissegundos de 1 dígito.
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. SSM Parameter Store & Secrets Manager -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <span>🔐 AWS Systems Manager (Parameter Store) & AWS Secrets Manager</span>
+                <span class="service-tag">SECURITY & CONFIG</span>
+            </div>
+            <div class="card-body">
+                <div id="security-content">Carregando parâmetros e segredos...</div>
+                <div class="exam-tip">
+                    <strong>Diferença na Prova CLF-C02:</strong> Use <strong>SSM Parameter Store</strong> para parâmetros de configuração gratuitos e hierárquicos; use <strong>AWS Secrets Manager</strong> para credenciais/senhas que exigem <strong>rotação automática</strong>!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadStatus() {
+        try {
+            const res = await fetch('/api/aws/status');
+            const data = await res.json();
+
+            document.getElementById('region-display').textContent = data.region;
+
+            // SQS
+            document.getElementById('sqs-content').innerHTML = `
+                <table>
+                    <thead><tr><th>Fila SQS</th><th>Disponíveis</th><th>Em Voo</th></tr></thead>
+                    <tbody>
+                        ${data.sqsQueues.map(q => `
+                            <tr>
+                                <td><span class="mono">${q.queueName}</span></td>
+                                <td><strong>${q.messagesAvailable}</strong></td>
+                                <td>${q.messagesInFlight}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // SNS
+            document.getElementById('sns-content').innerHTML = `
+                <p><strong>Tópico ARN:</strong> <span class="mono">${data.snsTopics.join(', ') || 'Nenhum'}</span></p>
+                <table>
+                    <thead><tr><th>Protocolo</th><th>Destino Inscrito (Fan-Out)</th></tr></thead>
+                    <tbody>
+                        ${data.snsSubscriptions.map(s => `
+                            <tr>
+                                <td><span class="status-ok">${s.protocol.toUpperCase()}</span></td>
+                                <td><span class="mono">${s.endpoint}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // S3
+            document.getElementById('s3-content').innerHTML = `
+                <table>
+                    <thead><tr><th>Bucket</th><th>Arquivos (Objetos)</th></tr></thead>
+                    <tbody>
+                        ${data.s3Buckets.map(b => `
+                            <tr>
+                                <td><span class="mono">s3://${b.bucketName}</span></td>
+                                <td><strong>${b.objectCount}</strong> objeto(s)</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // DynamoDB
+            document.getElementById('dynamo-content').innerHTML = `
+                <table>
+                    <thead><tr><th>Tabela</th><th>Itens Gravados</th><th>Status</th></tr></thead>
+                    <tbody>
+                        ${data.dynamoDbTables.map(t => `
+                            <tr>
+                                <td><span class="mono">${t.tableName}</span></td>
+                                <td><strong>${t.itemCount}</strong> item(ns)</td>
+                                <td><span class="status-ok">● ACTIVE (PAY_PER_REQUEST)</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Security & Config
+            document.getElementById('security-content').innerHTML = `
+                <table>
+                    <thead><tr><th>Serviço AWS</th><th>Chave / Nome</th><th>Valor Recuperado pelo Spring Boot</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>SSM Parameter Store</strong></td>
+                            <td><span class="mono">/ecommerce/config/cashback-percent</span></td>
+                            <td><span class="mono">${data.ssmCashbackPercent} (5% de Cashback)</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AWS Secrets Manager</strong></td>
+                            <td><span class="mono">ecommerce/payment-gateway/api-key</span></td>
+                            <td><span class="mono">${data.secretsManagerApiKey}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    loadStatus();
+</script>
+</body>
+</html>
+

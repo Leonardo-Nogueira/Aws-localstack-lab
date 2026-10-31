@@ -1,0 +1,26 @@
+server:
+  port: 8081 # Porta 8081 para nao conflitar caso o projeto de Idempotencia esteja na 8080!
+
+spring:
+  application:
+    name: aws-localstack-lab
+  cloud:
+    aws:
+      # =========================================================================
+      # CONCEITO DA PROVA CLF-C02:
+      # 1. No LocalStack (Desenvolvimento Local): Apontamos o endpoint para http://localhost:4566
+      #    e usamos credenciais ficticias ("test" / "test").
+      # 2. Na AWS Real (Producao em EC2 / ECS / EKS / Lambda):
+      #    Voce NUNCA coloca access-key / secret-key fixa no codigo!
+      #    Na prova: "Como uma aplicacao em uma instancia EC2 deve acessar um Bucket S3 com seguranca?"
+      #    Resposta: Anexando uma **IAM Role (Funcao do IAM)** na instancia EC2!
+      # =========================================================================
+      endpoint: http://localhost:4566
+      region:
+        static: us-east-1
+      credentials:
+        access-key: test
+        secret-key: test
+      s3:
+        path-style-access-enabled: true
+
